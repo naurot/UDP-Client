@@ -13,7 +13,7 @@ public class Main {
         int sPort =0;
         InetAddress sAddr = null;
         byte[] receiveBuffer = new byte[1029];
-        byte[] resTmp = new byte[1029];
+        byte[] resTmp;
 
         Scanner cin = new Scanner(System.in);
         System.out.print("Enter a url: ");
@@ -29,8 +29,7 @@ public class Main {
         tmp[2] = length[1];
         tmp[3] = length[2];
         tmp[4] = length[3];
-        for (int i = 0; i < url.length(); i++)
-            tmp[i + 5] = msg[i];
+        System.arraycopy(msg, 0, tmp, 5, url.length());
 
         DatagramPacket request = new DatagramPacket(tmp, packetLength, getLocalHost(), port);
         DatagramPacket response = new DatagramPacket(receiveBuffer, 1029);
@@ -47,7 +46,6 @@ public class Main {
                 initial = false;
                 sPort = response.getPort();
                 sAddr = response.getAddress();
-                tmp1 = 0;
             }
 
             resTmp = response.getData();
@@ -61,8 +59,7 @@ public class Main {
                 packetLength = new BigInteger(length).intValue();
                 System.out.println("\tPacket length: " + packetLength);
                 byte[] packet = new byte[1024];
-                for (int i = 0; i < packetLength - 5; i++)
-                    packet[i] = resTmp[i + 5];
+                if (packetLength - 5 >= 0) System.arraycopy(resTmp, 5, packet, 0, packetLength - 5);
                 request = new DatagramPacket(getAck((byte) tmp1), 5, sAddr, sPort);
                 System.out.println("\tSending ack" + tmp1);
                 datagramSocket.send(request);
@@ -80,9 +77,9 @@ public class Main {
         byte[] retValue = new byte[5];
         retValue[0] = ack;
         retValue[1] = 0;
-        retValue[1] = 0;
-        retValue[1] = 0;
-        retValue[1] = 0;
+        retValue[2] = 0;
+        retValue[3] = 0;
+        retValue[4] = 0;
         return retValue;
 
     }
