@@ -1,3 +1,6 @@
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileWriter;
 import java.math.BigInteger;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -10,7 +13,7 @@ import static java.net.InetAddress.getLocalHost;
 public class Main {
     public static void main(String[] args) throws Exception {
         int port = 11122;
-        int sPort =0;
+        int sPort = 0;
         InetAddress sAddr = null;
         byte[] receiveBuffer = new byte[1029];
         byte[] resTmp;
@@ -18,6 +21,7 @@ public class Main {
         Scanner cin = new Scanner(System.in);
         System.out.print("Enter a url: ");
         String url = cin.nextLine();
+        StringBuilder webPage = new StringBuilder();
 
         int packetLength = url.length() + 5;
         byte[] tmp = new byte[packetLength];
@@ -39,8 +43,9 @@ public class Main {
         System.out.println("Sent message: " + url);
         boolean initial = true;
         int tmp1 = 0;
+        String tab = "";
         do {
-            System.out.println("Waiting for response");
+            System.out.println(tab + "Waiting for response");
             datagramSocket.receive(response);
             if (initial) {
                 initial = false;
@@ -49,28 +54,61 @@ public class Main {
             }
 
             resTmp = response.getData();
-            System.out.println("\tReceived packet. Seq#" + resTmp[0]);
-            System.out.println("\tExpected seq#" + tmp1);
+            System.out.println(tab + "\tReceived packet. Seq#" + resTmp[0]);
+            System.out.println(tab + "\tExpected seq#" + tmp1);
             if (tmp1 == resTmp[0]) {
                 length[0] = resTmp[1];
                 length[1] = resTmp[2];
                 length[2] = resTmp[3];
                 length[3] = resTmp[4];
                 packetLength = new BigInteger(length).intValue();
-                System.out.println("\tPacket length: " + packetLength);
+//                System.out.println("\tPacket length: " + packetLength);
                 byte[] packet = new byte[1024];
                 if (packetLength - 5 >= 0) System.arraycopy(resTmp, 5, packet, 0, packetLength - 5);
+                webPage.append(new String(packet).substring(0,packetLength - 5));
                 request = new DatagramPacket(getAck((byte) tmp1), 5, sAddr, sPort);
-                System.out.println("\tSending ack" + tmp1);
+                System.out.println(tab + "\tSending ack" + tmp1);
                 datagramSocket.send(request);
-                tmp1 = tmp1 ^ 1;
+                tmp1 = tmp1 == 0 ? 1 : 0;
+                tab = "\t";
             } else {
-                System.out.println("\t***** wrong seq#");
-                int tmp2 = tmp1 ^ 1;
-                System.out.println("\tSending ack" + tmp2);
+                System.out.println(tab + "\t***** wrong seq#");
+                int tmp2 = tmp1 == 0 ? 1 : 0;
+                System.out.println(tab + "\tSending ack" + tmp2);
                 datagramSocket.send(new DatagramPacket(getAck((byte) tmp2), 5, sAddr, sPort));
+                tab = tab + "\t";
             }
         } while (packetLength > 1028);
+        FileWriter fout = new FileWriter(("something.html"));
+        fout.write(webPage.toString());
+        fout.close();
+
+        fComp("./something.html", "../Server/something1.html");
+    }
+
+    private static void fComp(String s, String s1) {
+        System.out.println("in File Compare");
+        int index = 0;
+        Scanner fin1 = null, fin2 = null;
+        try {
+            fin1 = new Scanner(new File(s));
+            fin2 = new Scanner(new File(s1));
+            String b1, b2;
+            while (fin1.hasNext() && fin2.hasNext()) {
+                b1 = fin1.next();
+                b2 = fin2.next();
+                if (!b1.equals(b2)) {
+                    System.out.println("diff: index= " + index + ", b1= " + b1 + ", b2= " + b2);
+                }
+                index++;
+            }
+        } catch (FileNotFoundException e) {
+            System.out.println("error: " + e);
+        } finally {
+            if (fin1.hasNext() ^ fin2.hasNext())
+                System.out.println("Error: files have different sizes");
+            System.out.println("Leaving File Compare: index= " + index); //making certain something was compared
+        }
     }
 
     public static byte[] getAck(byte ack) {
