@@ -10,7 +10,7 @@ import java.util.Scanner;
 
 import static java.net.InetAddress.getLocalHost;
 
-public class Main {
+public class SosnoskiClient {
 
 //    static byte[] packet = new byte[1024];
     public static void main(String[] args) throws Exception {
