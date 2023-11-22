@@ -11,13 +11,16 @@ import java.util.Scanner;
 import static java.net.InetAddress.getLocalHost;
 
 public class Main {
+
+//    static byte[] packet = new byte[1024];
     public static void main(String[] args) throws Exception {
         int port = 11122;
         int sPort = 0;
         InetAddress sAddr = null;
         byte[] receiveBuffer = new byte[1029];
         byte[] resTmp;
-
+        byte[] packet = new byte[1024];
+        String packetString;
         Scanner cin = new Scanner(System.in);
         System.out.print("Enter a url: ");
         String url = cin.nextLine();
@@ -62,10 +65,14 @@ public class Main {
                 length[2] = resTmp[3];
                 length[3] = resTmp[4];
                 packetLength = new BigInteger(length).intValue();
-//                System.out.println("\tPacket length: " + packetLength);
-                byte[] packet = new byte[1024];
-                if (packetLength - 5 >= 0) System.arraycopy(resTmp, 5, packet, 0, packetLength - 5);
-                webPage.append(new String(packet).substring(0,packetLength - 5));
+                for (int i = 5; i < packetLength; i++){
+                    packet[i-5] = resTmp[i];
+                }
+                packetString = new String(packet);
+                if (packetLength < 1029)
+                    packetString = packetString.substring(0,packetLength - 5);
+//                webPage.append(new String(packet), 0, packetLength -5);
+                webPage.append(packetString);
                 request = new DatagramPacket(getAck((byte) tmp1), 5, sAddr, sPort);
                 System.out.println(tab + "\tSending ack" + tmp1);
                 datagramSocket.send(request);
@@ -98,7 +105,7 @@ public class Main {
                 b1 = fin1.next();
                 b2 = fin2.next();
                 if (!b1.equals(b2)) {
-                    System.out.println("diff: index= " + index + ", b1= " + b1 + ", b2= " + b2);
+                    System.out.println("diff: index=" + index + ", b1=|" + b1 + "|, b2=|" + b2 + "|");
                 }
                 index++;
             }
